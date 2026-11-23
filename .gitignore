@@ -11,3 +11,8 @@ logs/
 .ipynb_checkpoints/
 .env
 *.zip
+bert-base-uncased/
+abide/
+*.log
+*.csv
+*.png
