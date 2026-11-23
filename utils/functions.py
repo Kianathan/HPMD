@@ -4,9 +4,7 @@ import random
 import pynvml
 import logging
 
-
-logger = logging.getLogger('EMOE')
-
+logger = logging.getLogger('HPMD')
 
 def dict_to_str(src_dict):
     dst_str = ""
@@ -36,9 +34,7 @@ def assign_gpu(gpu_ids, memory_limit=1e16):
                 dst_gpu_id = g_id
         logger.info(f'Found gpu {dst_gpu_id}, used memory {min_mem_used}.')
         gpu_ids.append(dst_gpu_id)
-    # device
     using_cuda = len(gpu_ids) > 0 and torch.cuda.is_available()
-    # logger.info("Let's use %d GPUs!" % len(gpu_ids))
     device = torch.device('cuda:%d' % int(gpu_ids[0]) if using_cuda else 'cpu')
     return device
 
@@ -47,5 +43,4 @@ def count_parameters(model):
     for p in model.parameters():
         if p.requires_grad:
             res += p.numel()
-            # print(p)
     return res

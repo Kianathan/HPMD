@@ -4,11 +4,10 @@ ATIO -- All Trains in One
 from .singleTask import *
 
 __all__ = ['ATIO']
-
 class ATIO():
     def __init__(self):
         self.TRAIN_MAP = {
-            'emoe': EMOE,
+            'hpmd': HPMD,
         }
     
     def getTrain(self, args):

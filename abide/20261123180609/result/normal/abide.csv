@@ -1,0 +1,2 @@
+Model,Acc_3,F1_score_3,Sensitivity,Specificity,auc_value,Loss
+hpmd,"(87.36, 0.0)","(87.33, 0.0)","(90.43, 0.0)","(83.75, 0.0)","(89.53, 0.0)","(44.35, 0.0)"

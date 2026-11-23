@@ -3,31 +3,39 @@ import torch
 import torch.nn as nn
 
 def make_positions(tensor, padding_idx, left_pad):
-    """Replace non-padding symbols with their position numbers.
-    Position numbers begin at padding_idx+1.
-    Padding symbols are ignored, but it is necessary to specify whether padding
-    is added on the left side (left_pad=True) or right side (left_pad=False).
     """
+    将非填充（padding）标记的位置替换为它们的“位置编号”。
+    位置编号从 padding_idx+1 开始；填充符号保持不变。
+    left_pad=True 表示填充在序列左侧，否则填充在右侧。
+    """
+    # 1. 准备一个足够长的 “位置索引” 缓冲区
     max_pos = padding_idx + 1 + tensor.size(1)
     device = tensor.get_device()
     buf_name = f'range_buf_{device}'
+    # 如果缓存不存在，则初始化一个同类型的空张量
     if not hasattr(make_positions, buf_name):
         setattr(make_positions, buf_name, tensor.new())
+    # 确保缓存与输入同类型
     setattr(make_positions, buf_name, getattr(make_positions, buf_name).type_as(tensor))
+    # 如果当前缓存长度不够，就填充 1,2,3… 的位置索引
     if getattr(make_positions, buf_name).numel() < max_pos:
         torch.arange(padding_idx + 1, max_pos, out=getattr(make_positions, buf_name))
+    # 2. 构造 mask，标记哪些位置不是 padding
     mask = tensor.ne(padding_idx)
+    # 3. 从缓存中取出前 seq_len 个位置索引，扩展到与 tensor 同形
     positions = getattr(make_positions, buf_name)[:tensor.size(1)].expand_as(tensor)
+    # 4. 如果填充在左侧，需要将位置编号往后平移
     if left_pad:
         positions = positions - mask.size(1) + mask.long().sum(dim=1).unsqueeze(1)
+    # 5. 最终用 masked_scatter_ 将非 padding 的原始值替换为位置编号
     new_tensor = tensor.clone()
     return new_tensor.masked_scatter_(mask, positions[mask]).long()
 
 
 class SinusoidalPositionalEmbedding(nn.Module):
-    """This module produces sinusoidal positional embeddings of any length.
-    Padding symbols are ignored, but it is necessary to specify whether padding
-    is added on the left side (left_pad=True) or right side (left_pad=False).
+    """
+    产生任意长度的正余弦位置嵌入（sinusoidal positional embedding）。
+    支持左侧或右侧 padding，padding 对应的索引位置全为 0 向量。
     """
 
     def __init__(self, embedding_dim, padding_idx=0, left_pad=0, init_size=128):
@@ -40,9 +48,9 @@ class SinusoidalPositionalEmbedding(nn.Module):
 
     @staticmethod
     def get_embedding(num_embeddings, embedding_dim, padding_idx=None):
-        """Build sinusoidal embeddings.
-        This matches the implementation in tensor2tensor, but differs slightly
-        from the description in Section 3.5 of "Attention Is All You Need".
+        """
+        构造正余弦位置编码矩阵，shape = (num_embeddings, embedding_dim)。
+        位置嵌入
         """
         half_dim = embedding_dim // 2
         emb = math.log(10000) / (half_dim - 1)
@@ -57,7 +65,10 @@ class SinusoidalPositionalEmbedding(nn.Module):
         return emb
 
     def forward(self, input):
-        """Input is expected to be of size [bsz x seqlen]."""
+        """
+        输入 input: shape = (batch_size, seq_len)，其中元素为 token IDs（其中 padding_idx 被视为填充）。
+        输出位置嵌入: shape = (batch_size, seq_len, embedding_dim)。embedding_dim表示每个 token 的位置嵌入向量，而填充位置的嵌入全为 0。
+        """
         bsz, seq_len = input.size()
         max_pos = self.padding_idx + 1 + seq_len
         device = input.get_device()

@@ -1,0 +1,13 @@
+﻿__pycache__/
+*.pyc
+*.pt
+*.pth
+*.bin
+dataset/
+data/
+weights/
+runs/
+logs/
+.ipynb_checkpoints/
+.env
+*.zip
